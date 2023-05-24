@@ -1,8 +1,7 @@
-
 ### 一.如何使用qemu模拟执行riscv程序
 
 ```
-qemu-system-riscv64 -L /usr/riscv64-linux-gnu ./texe < in > out
+qemu-riscv64 -L /usr/riscv64-linux-gnu ./texe < in > out
 ```
 
 ### 二.如何获取riscv执行程序后的返回值?

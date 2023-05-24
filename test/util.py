@@ -1,5 +1,10 @@
 import os
 import subprocess
+import mylog
+
+# 
+
+
 
 def get_all_file_paths(directory):
     file_paths = []
@@ -10,17 +15,47 @@ def get_all_file_paths(directory):
     return file_paths
 
 
-
-
+# 测试某个文件夹下的内容,测试成功返回true,测试失败返回false
+def test(path):
+    testunits=[]   #通过名字进行一个set
+    sysets=set()
+    insets=set()
+    outsets=set()
+    files=get_all_file_paths(path)
+    for file in files :
+        # 去掉后缀名,判断是否一致
+        basename, extension = os.path.splitext(file)
+        if extension== ".sy":
+            sysets.add(basename)
+        elif extension==".in":
+            insets.add(basename)
+        elif extension==".out":
+            outsets.add(basename)
+    for basename in sysets:
+        testunits.append(Unit(sy=basename+".sy"))
+        end=testunits[-1]
+        if basename in insets :
+            end.input=basename+".in"
+        if basename in outsets:
+            end.out=basename+".out"
+            
+    num=0
+    for testunit in testunits :
+        if not testunit.test():
+            mylog.log("test",path,"fail!",num,"/",len(testunits))
+            return 
+        num+=1
+    mylog.log("test",path,"pass!")
+            
+            
 def call_program_with_io(command=['./texe'],input_file="0.in", output_file="0.out"):
     with open(input_file, 'r') as input_f:
         with open(output_file, 'w') as output_f:
             subprocess.run(command, stdin=input_f, stdout=output_f, text=True)
 
 
-
 # 比较两个文件,输出不同之处在logFile中
-def cmp_file(path1,path2,logFile):
+def cmp_file(path1,path2,logFile="exe.log"):
     with open(path1, 'r') as f1:
         with open(path2,'r') as f2:
             with open(logFile,'w') as f3:
@@ -59,11 +94,10 @@ def cmp_file(path1,path2,logFile):
     
     
 # 示例用法
-#
 
 # 测试单元
 class Unit:
-    compiler="" #指定自己要使用的编译器
+    compiler="/test/data/compiler" #指定自己要使用的编译器
     stdcompiler="riscv64-linux-gnu-gcc" #指定对比使用的标准编译器
     asmbler="as"  #指定使用的汇编器
     linker="ld"   #指定使用的链接器
@@ -74,36 +108,68 @@ class Unit:
     myexe="/test/data/mexe"    #我们可执行程序的路径
     myasm="/test/data/myasm.s"  #我们的汇编路径
     myout="/test/data/mout"    #我们输出的路径
+    logfile="/test/data/exe.log"    #查看的路径
+    timeout=1000000  #设计个执行超时时间
     
     
     def __init__(self,input="",out="",sy=""):
         self.input=input
         self.out=out
         self.sy=sy
+
+   
+    
     # 测试该测试单元,执行前应该先指定使用的编译器
     def test(self):
         # 复制对应路径的内容到当前路径下
         subprocess.run(["cp",self.input,self.tin])
         subprocess.run(["cp",self.out,self.tout])
-        subprocess.run(["echo",self.sy,">>",self.tsrc])
-        
+        subprocess.run(["cp",self.sy,self.tsrc])
         #标准编译过程
         try:
-            subprocess.run([self.stdcompiler,"-o",self.texe,self.tsrc,"/test/data/libsysy.a"])
+            #
+            ttsrc="tmp_"+self.tsrc
+            subprocess.run(["cp","/test/data/sylib.c",ttsrc])  
+            subprocess.run(["cat",self.tsrc,">>",ttsrc]) 
+            subprocess.run([self.stdcompiler,"-o",self.texe,ttsrc],timeout=self.timeout)
         except:
-            print(self.stdcompiler,"fail to compile")
+            mylog.log(self.stdcompiler,"fail to compile")
             return False
         # 我们的编译过程
         try:
-            # TODO
-            subprocess.run([self.compiler,"-c",self.myasm,self.tsrc])
-            subprocess.run([self.stdcompiler,""])
+            # TODO compiler testcase.sysy -S -o testcase.s
+            subprocess.run([self.compiler,self.tsrc,"-S","-o",self.myasm],timeout=self.timeout)
+            libo="/test/data/sylib.o"
+            subprocess.run([self.stdcompiler,"-c","/test/data/sylib.c","-o",libo])
+            # gcc -c b.c -o b.o
+            subprocess.run([self.stdcompiler,self.myasm,libo,"-o",self.myexe],timeout=self.timeout)
         except:
-            print(self.compiler,"fail to compile")
+            mylog.log(self.compiler,"fail to compile")
             return False
-            
+        stdRet=0
+        myRet=0
+        try:
+            if self.input!='':
+                # 执行标准编译器编译出来的程序
+                stdRet=subprocess.run(["qemu-riscv64","-L","/usr/riscv64-linux-gnu",self.texe,"<",self.tin,">",self.tout])
+                #执行用我们的编译器编译出来的程序
+                myRet=subprocess.run(["qemu-riscv64","-L","/usr/riscv64-linux-gnu",self.myexe,"<",self.tin,">",self.myout])
+            else:
+                # 执行标准编译器编译出来的程序
+                stdRet=subprocess.run(["qemu-riscv64","-L","/usr/riscv64-linux-gnu",self.texe,">",self.tout])
+                #执行用我们的编译器编译出来的程序
+                myRet=subprocess(["qemu-riscv64","-L","/usr/riscv64-linux-gnu",self.myexe,">",self.myout])
+            # 把两个函数的返回值写入到函数结尾
+        except:
+            mylog.log("exe run time out")
+            return False
+        # 把返回值写入l两个文件末尾
+        subprocess.run(["echo",stdRet,">>",self.tout])
+        subprocess.run(["echo",myRet,">>",self.myout])
+        # 最后比较两个函数的返回值
+        if not cmp_file(self.tout,self.myout): #比较两个文件执行的输出,把比较结果输出到logfile中
+            return False
         return True
-    
     
 a =Unit()
 

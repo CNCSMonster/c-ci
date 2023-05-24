@@ -1,8 +1,0 @@
-
-want: docker registry账号密码
- 
-get : docker retistry账号密码
-
-               ↑
-
-@line: 1 @charAt: 9

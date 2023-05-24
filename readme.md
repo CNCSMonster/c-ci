@@ -17,7 +17,7 @@ systemctl restart docker
 ```
 # 登录(应该不登录也可以pull)
 docker login 10.249.12.83:5000
-# 获取镜像
+# 获取镜像(获取当时最新版本的镜像)
 docker pull 10.249.12.83:5000/riscv-ci:1.0
 ```
 
@@ -46,6 +46,8 @@ python test_ff.py
 ```
 
 ### 准备具有测试工具的基础image
+
+使用的一个python3的基础image,然后下载了交叉编译工具链已经qemu-riscv64
 
 ### 编写测试脚本
 
