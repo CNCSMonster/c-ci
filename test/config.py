@@ -1,1 +1,2 @@
-logPath="log"
+logPath="/test/data/log"
+level=1

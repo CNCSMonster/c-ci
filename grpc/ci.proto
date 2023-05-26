@@ -14,6 +14,5 @@ bytes compiler=2;//测试请求上传可执行程序
 }
 
 message TestReply {
-bytes compilingLog=1;   //返回编译过程信息
-bytes exeLog=2; //返回编译结果执行信息
+    // 不返回任何返回信息,所有信息放在文件里面
 }

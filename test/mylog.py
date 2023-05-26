@@ -5,6 +5,7 @@
 
 import config
 
-def log(msg,outPath=config.logPath):
-    with open(outPath,"w") as f:
-        print(msg,file=f)
+def log(msg,level=1,outPath=config.logPath):
+    with open(outPath,"w+") as f:
+        if level<=config.level:
+            print(msg,file=f)

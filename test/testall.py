@@ -10,6 +10,4 @@ if __name__ == '__main__':
     for test in tests :
         if not test():
             break
-        
-if __name__ == '__main__':
-    test()
+       
