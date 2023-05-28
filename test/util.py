@@ -42,14 +42,14 @@ def test(path):
     num=0
     for testunit in testunits :
         if not testunit.test():
-            mylog.log("test "+path+ " fail! "+num+"/"+len(testunits))
+            mylog.log("test "+path+ " fail! "+str(num)+"/"+str(len(testunits)))
             return False
         num+=1
     mylog.log("test "+path+" fail!")
     return True
 
             
-def call_program_with_io(command=['./texe'],input_file="", output_file="",outputmod="w+"):
+def call_program_with_io(command=['./texe'],input_file="", output_file="",outputmod="a"):
     if input_file=="" and output_file=="":
         return subprocess.run(command).returncode
     elif output_file=="":
@@ -111,11 +111,13 @@ class Unit:
     compiler="/test/data/compiler" #指定自己要使用的编译器
     # compiler="riscv64-linux-gnu-gcc"
     stdcompiler="riscv64-linux-gnu-gcc" #指定对比使用的标准编译器
+    stdcompiler_gpp="riscv64-linux-gnu-g++" #g++用来编译会导致语法错误的选项
     asmbler="as"  #指定使用的汇编器
     linker="ld"   #指定使用的链接器
     tmp="/test/data/tmp.c"   #临时使用的文件名,用来保存预编译处理前结果,应为.c以遍通过编译器检测
     lib="/test/data/sylib.c"   #使用的库文件
     macroToRm="/test/t.h"   #用来替换的宏
+    tasm="/test/data/t.s"  #目标汇编
     tin="/test/data/tin"  #目标可执行程序的输入路径
     tout="/test/data/tout" #目标可执行程序的输出路径
     tsrc="/test/data/t.c"   #目标sy程序
@@ -137,17 +139,22 @@ class Unit:
     # 测试该测试单元,执行前应该先指定使用的编译器
     def test(self):
         # 复制对应路径的内容到当前路径下
-        subprocess.run(["cp",self.input,self.tin])
+        if self.input!="":
+            subprocess.run(["cp",self.input,self.tin])
         subprocess.run(["cp",self.out,self.tout])
-        subprocess.run(["touch",self.tmp])
-        call_program_with_io(["echo","#include \"../t.h\""],output_file=self.tmp)
-        call_program_with_io(['cat',self.sy],output_file= self.tmp)
+        call_program_with_io(["echo","#include \"../t.h\""],output_file=self.tmp,outputmod="w")
+        call_program_with_io(['cat',self.sy],output_file= self.tmp,outputmod="a")
         # 先对源代码进行预处理,去掉宏
         subprocess.run([self.stdcompiler,"-E","-P",self.tmp,"-o",self.tsrc])
         
         #标准编译过程
         try:
-            subprocess.run([self.stdcompiler,"-o",self.texe,self.tsrc,self.lib],timeout=self.timeout)
+            # 先编译出汇编
+            call_program_with_io(['echo',"#include \"/test/data/sylib.h\""],output_file=self.tmp,outputmod="w")
+            call_program_with_io(['cat',self.tsrc],output_file=self.tmp,outputmod="a")
+            # 然后对tmp2的代码使用g++来编译
+            subprocess.run([self.stdcompiler_gpp,self.tmp,"-S",'-o',self.tasm],timeout=self.timeout)
+            subprocess.run([self.stdcompiler,"-o",self.texe,self.tasm,self.lib],timeout=self.timeout)
         except:
             mylog.log(self.stdcompiler+" fail to compile")
             return False
@@ -178,15 +185,22 @@ class Unit:
             mylog.log("exe run time out")
             return False
         # 把返回值写入l两个文件末尾
-        call_program_with_io(["echo",str(stdRet)],output_file=self.tout)
-        call_program_with_io(["echo",str(myRet)],output_file=self.myout)
+        # with open(self.tout,"")
+        # if os.stat(self.tout).st_size == 0:
+        #     call_program_with_io(["echo",str(stdRet)],output_file=self.tout,outputmod="a")
+        # else:
+        #     with open(self.tout,"a") as f:
+        #         print("\n"+str(stdRet),file=f)
+        call_program_with_io(["echo",str(stdRet)],output_file=self.tout,outputmod="a")
+        call_program_with_io(["echo",str(myRet)],output_file=self.myout,outputmod="a")
         # 最后比较两个函数的返回值
         if not cmp_file(self.tout,self.myout): #比较两个文件执行的输出,把比较结果输出到logfile中
+            mylog.log("fail at "+self.sy)
             return False
-        mylog.log("pass",self.sy,level=2)
+        mylog.log("pass "+self.sy,level=2)
         return True
+   
+if __name__ =="__main__":
+    a =Unit(sy="./data/functional/00_main.sy",out="./data/functional/00_main.out")
+    a.test()
     
-a =Unit(sy="./data/t.c",input="./data/in",out="./data/out")
-
-a.test()
-# cmp_file("a.txt","b.txt","0.txt") #test

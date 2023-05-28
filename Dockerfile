@@ -1,5 +1,5 @@
 # 使用官方Python镜像作为基础镜像
-FROM riscv-ci:1.0
+FROM  iroazh/clang-riscv64
 
 # 设置工作目录
 WORKDIR /test
@@ -19,6 +19,7 @@ ENV PYTHONUNBUFFERED=1
 
 # 开放端口
 EXPOSE 5000
+
 
 CMD ["/bin/bash"]
 

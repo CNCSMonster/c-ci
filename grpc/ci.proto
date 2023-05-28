@@ -9,10 +9,10 @@ rpc CallTest (TestRequest)returns (TestReply){}
 
 // The request message containing the user's name.
 message TestRequest {
-string testPackagePath= 1;
-bytes compiler=2;//测试请求上传可执行程序
+string path= 1;
 }
-
+// python3 -m grpc_tools.protoc -I./ --python_out=. --pyi_out=. --grpc_python_out=. ./ci.proto
+// python3 -m grpc_tools.protoc -I. --python_out=. --pyi_out=. --grpc_python_out=. ./ci.proto
 message TestReply {
-    // 不返回任何返回信息,所有信息放在文件里面
+    string retMsg=1;
 }

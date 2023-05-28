@@ -5,3 +5,5 @@ key.pub
 /data/functional/*
 /data/hidden_functional/*
 /data/performance/*
+/gcc
+/gcc-master
