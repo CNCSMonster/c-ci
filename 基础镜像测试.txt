@@ -1,0 +1,23 @@
+
+目标:
+有python环境，x86架构下linux系统.
+有qemu-user
+
+有能够编译c语言代码为riscv64gc汇编的clang编译器(14以及以下，14以上就无法编译了)
+(ps,不能用比赛官方指定的gcc来进行源代码到汇编这个过程的编译，因为无法处理 int arr[b+1]={};其中b为const int)
+
+
+## 测试过的基础镜像
+
+1. ubuntu:latest
+无法下载python
+
+2. 3b418d7b466a
+无法更新clang,依赖冲突
+
+3. debian:bookworm
+不能够安装qemu-user
+
+4.ubuntu:22.10
+安装python成功
+

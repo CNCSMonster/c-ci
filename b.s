@@ -1,33 +1,65 @@
-	.text
-	.attribute	4, 16
-	.attribute	5, "rv64i2p0_m2p0_a2p0_f2p0_d2p0_c2p0"
 	.file	"b.c"
-	.globl	main                            # -- Begin function main
-	.p2align	1
-	.type	main,@function
-main:                                   # @main
-# %bb.0:
-	addi	sp, sp, -160
-	sd	ra, 152(sp)                     # 8-byte Folded Spill
-	sd	s0, 144(sp)                     # 8-byte Folded Spill
-	addi	s0, sp, 160
-	li	a1, 0
-	sw	a1, -20(s0)
-	li	a0, 33
-	sw	a0, -24(s0)
-	addi	a0, s0, -160
-	li	a2, 136
-	call	memset@plt
-	li	a0, 1
-	sw	a0, -160(s0)
-	lw	a0, -160(s0)
-	ld	ra, 152(sp)                     # 8-byte Folded Reload
-	ld	s0, 144(sp)                     # 8-byte Folded Reload
-	addi	sp, sp, 160
+	.text
+	.globl	_Z4add1i
+	.type	_Z4add1i, @function
+_Z4add1i:
+.LFB30:
+	.cfi_startproc
+	endbr64
+	pushq	%rbx
+	.cfi_def_cfa_offset 16
+	.cfi_offset 3, -16
+	movl	%edi, %ebx
+	movq	stdin(%rip), %rdi
+	call	fgetc@PLT
+	leal	-48(%rbx,%rax), %eax
+	popq	%rbx
+	.cfi_def_cfa_offset 8
 	ret
-.Lfunc_end0:
-	.size	main, .Lfunc_end0-main
-                                        # -- End function
-	.ident	"Ubuntu clang version 15.0.6"
-	.section	".note.GNU-stack","",@progbits
-	.addrsig
+	.cfi_endproc
+.LFE30:
+	.size	_Z4add1i, .-_Z4add1i
+	.globl	main
+	.type	main, @function
+main:
+.LFB31:
+	.cfi_startproc
+	endbr64
+	subq	$8, %rsp
+	.cfi_def_cfa_offset 16
+	movl	$3, %edi
+	call	_Z4add1i
+	movslq	%eax, %rdx
+	addl	$1, %eax
+	testq	%rdx, %rdx
+	js	.L4
+.L5:
+	subq	$1, %rdx
+	cmpq	$-1, %rdx
+	jne	.L5
+.L4:
+	sall	$2, %eax
+	addq	$8, %rsp
+	.cfi_def_cfa_offset 8
+	ret
+	.cfi_endproc
+.LFE31:
+	.size	main, .-main
+	.ident	"GCC: (Ubuntu 12.2.0-3ubuntu1) 12.2.0"
+	.section	.note.GNU-stack,"",@progbits
+	.section	.note.gnu.property,"a"
+	.align 8
+	.long	1f - 0f
+	.long	4f - 1f
+	.long	5
+0:
+	.string	"GNU"
+1:
+	.align 8
+	.long	0xc0000002
+	.long	3f - 2f
+2:
+	.long	0x3
+3:
+	.align 8
+4:

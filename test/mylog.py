@@ -8,4 +8,4 @@ import config
 def log(msg:str,level=1,outPath=config.logPath):
     with open(outPath,"a") as f:
         if level<=config.level:
-            print(msg,file=f)
+            f.write(msg+"\n")

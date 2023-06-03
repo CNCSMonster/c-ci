@@ -3,8 +3,9 @@
 import subprocess
 
 if __name__=="__main__":
+    # subprocess.run(["cd","llvm"])
     while True :
-        retCode=subprocess.run(["git","clone","https://github.com/gcc-mirror/gcc.git"]).returncode
+        retCode=subprocess.run(["git","clone","https://github.com/llvm-mirror/llvm"]).returncode
         if retCode!=0 :
             print(retCode)
             continue

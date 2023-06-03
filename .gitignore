@@ -7,3 +7,4 @@ key.pub
 /data/performance/*
 /gcc
 /gcc-master
+/llvm

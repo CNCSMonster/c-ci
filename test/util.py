@@ -111,7 +111,6 @@ class Unit:
     compiler="/test/data/compiler" #指定自己要使用的编译器
     # compiler="riscv64-linux-gnu-gcc"
     stdcompiler="riscv64-linux-gnu-gcc" #指定对比使用的标准编译器
-    stdcompiler_gpp="riscv64-linux-gnu-g++" #g++用来编译会导致语法错误的选项
     asmbler="as"  #指定使用的汇编器
     linker="ld"   #指定使用的链接器
     tmp="/test/data/tmp.c"   #临时使用的文件名,用来保存预编译处理前结果,应为.c以遍通过编译器检测
@@ -153,7 +152,7 @@ class Unit:
             call_program_with_io(['echo',"#include \"/test/data/sylib.h\""],output_file=self.tmp,outputmod="w")
             call_program_with_io(['cat',self.tsrc],output_file=self.tmp,outputmod="a")
             # 然后对tmp2的代码使用g++来编译
-            subprocess.run([self.stdcompiler_gpp,self.tmp,"-S",'-o',self.tasm],timeout=self.timeout)
+            subprocess.run([self.stdcompiler,self.tmp,"-S",'-o',self.tasm],timeout=self.timeout)
             subprocess.run([self.stdcompiler,"-o",self.texe,self.tasm,self.lib],timeout=self.timeout)
         except:
             mylog.log(self.stdcompiler+" fail to compile")
