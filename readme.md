@@ -7,9 +7,11 @@
 因为只支持http,所以需要修改配置重启docker允许不安全pull
 
 ```
-echo '{ "insecure-registries":["10.249.12.83:5000"] }' > daemon.json
+sudo touch f/etc/docker/daemon.json
 
-systemctl restart docker
+sudo echo '{ "insecure-registries":["10.249.12.83:5000"] }' > /etc/docker/daemon.json
+
+sudo systemctl restart docker
 ```
 
 登录拉取

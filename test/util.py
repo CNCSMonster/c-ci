@@ -17,6 +17,8 @@ def get_all_file_paths(directory):
 
 # 测试某个文件夹下的内容,测试成功返回true,测试失败返回false
 def test(path):
+    # 测试过程中会先清理log的内容
+    mylog.clear()
     testunits=[]   #通过名字进行一个set
     sysets=set()
     insets=set()
@@ -40,7 +42,14 @@ def test(path):
             end.out=basename+".out"
             
     num=0
+    
+    
+    # 对testunits进行排序,按照首个字母下标进行升序排序
+    testunits.sort(key=lambda v:v.order() )  
+    
+    
     for testunit in testunits :
+        print(testunit.order())
         if not testunit.test():
             mylog.log("test "+path+ " fail! "+str(num)+"/"+str(len(testunits)))
             return False
@@ -50,18 +59,20 @@ def test(path):
 
             
 def call_program_with_io(command=['./texe'],input_file="", output_file="",outputmod="a"):
+    stdRet=None
     if input_file=="" and output_file=="":
-        return subprocess.run(command).returncode
+        stdRet= subprocess.run(command)
     elif output_file=="":
         with open(input_file, 'r') as input_f:
-            return subprocess.run(command, stdin=input_f, text=True).returncode
+            stdRet= subprocess.run(command, stdin=input_f, text=True)
     elif input_file=="":
         with open(output_file, outputmod) as output_f:
-            return subprocess.run(command, stdout=output_f, text=True).returncode
+            stdRet= subprocess.run(command, stdout=output_f, text=True)
     else:   
         with open(input_file, 'r') as input_f:
             with open(output_file, outputmod) as output_f:
-                return subprocess.run(command, stdin=input_f, stdout=output_f, text=True).returncode
+                stdRet= subprocess.run(command, stdin=input_f, stdout=output_f, text=True)
+    return stdRet
 
 import config
 # 比较两个文件,输出不同之处在logFile中
@@ -134,6 +145,11 @@ class Unit:
         self.sy=sy
 
    
+    def order(self):
+        # 排序要用，获取该测试单元的文件编号
+        str1=self.sy.split("/")[-1]
+        str1=str1.split("_")[0]
+        return int(str1,10)
     
     # 测试该测试单元,执行前应该先指定使用的编译器
     def test(self):
@@ -146,12 +162,13 @@ class Unit:
         # 先对源代码进行预处理,去掉宏
         subprocess.run([self.stdcompiler,"-E","-P",self.tmp,"-o",self.tsrc])
         
+        stdRet=None
+        myRet=None
         #标准编译过程
         try:
             # 先编译出汇编
             call_program_with_io(['echo',"#include \"/test/data/sylib.h\""],output_file=self.tmp,outputmod="w")
             call_program_with_io(['cat',self.tsrc],output_file=self.tmp,outputmod="a")
-            # 然后对tmp2的代码使用g++来编译
             subprocess.run([self.stdcompiler,self.tmp,"-S",'-o',self.tasm],timeout=self.timeout)
             subprocess.run([self.stdcompiler,"-o",self.texe,self.tasm,self.lib],timeout=self.timeout)
         except:
@@ -160,13 +177,19 @@ class Unit:
         # 我们的编译过程
         try:
             # TODO compiler testcase.sysy -S -o testcase.s
-            subprocess.run([self.compiler,self.tsrc,"-S","-o",self.myasm],timeout=self.timeout)
-            subprocess.run([self.stdcompiler,"-o",self.myexe,self.myasm,self.lib],timeout=self.timeout)
+            with open(config.logPath,"a+") as f:
+                myRet=subprocess.run([self.compiler,self.tsrc,"-S","-o",self.myasm],stderr=f,timeout=self.timeout)
+                if myRet.returncode!=0:
+                    mylog.log("compiler fail to compile at "+self.sy)
+                    return False
+                myRet=subprocess.run([self.stdcompiler,"-o",self.myexe,self.myasm,self.lib],stderr=f,timeout=self.timeout)
+                if myRet.returncode!=0:
+                    mylog.log("compiler conpile wrongly at "+self.sy)
+                    return False
         except:
             mylog.log(self.compiler+" fail to compile")
             return False
-        stdRet=0
-        myRet=0
+        
         try:
             if self.input!='':
                 # 如果需要输入文件时
@@ -181,7 +204,7 @@ class Unit:
                 myRet=call_program_with_io(["qemu-riscv64","-L","/usr/riscv64-linux-gnu",self.myexe],output_file=self.myout,outputmod="w")
             # 把两个函数的返回值写入到函数结尾
         except:
-            mylog.log("exe run time out")
+            mylog.log("exe run time out at"+self.sy)
             return False
         # 把返回值写入l两个文件末尾
         # with open(self.tout,"")
@@ -190,16 +213,24 @@ class Unit:
         # else:
         #     with open(self.tout,"a") as f:
         #         print("\n"+str(stdRet),file=f)
-        call_program_with_io(["echo",str(stdRet)],output_file=self.tout,outputmod="a")
-        call_program_with_io(["echo",str(myRet)],output_file=self.myout,outputmod="a")
+        call_program_with_io(["echo",str(stdRet.returncode)],output_file=self.tout,outputmod="a")
+        call_program_with_io(["echo",str(myRet.returncode)],output_file=self.myout,outputmod="a")
         # 最后比较两个函数的返回值
-        if not cmp_file(self.tout,self.myout): #比较两个文件执行的输出,把比较结果输出到logfile中
+        
+        # TODO,用后来者去比对
+        # if not cmp_file(self.tout,self.myout): #比较两个文件执行的输出,把比较结果输出到logfile中
+        #     mylog.log("fail at "+self.sy)
+        #     # 如果失败的话,提示失败原因
+        #     return False
+        if not cmp_file(self.out,self.myout):
             mylog.log("fail at "+self.sy)
+            # 如果失败的话,提示失败原因
             return False
         mylog.log("pass "+self.sy,level=2)
         return True
    
 if __name__ =="__main__":
-    a =Unit(sy="./data/functional/00_main.sy",out="./data/functional/00_main.out")
+    mylog.clear()
+    a =Unit(sy="./data/functional/56_sort_test2.sy",out="./data/functional/56_sort_test2.out")
     a.test()
     
