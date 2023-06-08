@@ -11,5 +11,8 @@ stub = ci_pb2_grpc.GreeterStub(channel)
 # 获取命令行参数
 # 对于每个命令行参数,发起一次测试
 for path in sys.argv[1:] :
+    # print("call ",path)
     response=stub.CallTest(ci_pb2.TestRequest(path=path))
     print(response.retMsg)
+    
+    

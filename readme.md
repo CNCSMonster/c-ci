@@ -23,13 +23,19 @@ docker login 10.249.12.83:5000
 docker pull 10.249.12.83:5000/riscv-ci:1.0
 ```
 
-运行且挂载文件
+运行且挂载文件且绑定实际网络端口以暴露服务
 
 ```
-docker run -it --name ci -d -v <your data folder>:/test/data 10.249.12.83:5000/riscv-ci:1.0
+docker run -it --name ci -d -v <your data folder>:/test/data -p 50051:50051 10.249.12.83:5000/riscv-ci:1.0
 ```
 
 上面的替换成你自己的测试数据位置,里面的内容格式应该如该仓库的/data路径中的内容,(或者如该链接中的内容一样[公开样例与运行时库 · master · CSC-Compiler / Compiler2022 · GitLab (](https://gitlab.eduxiji.net/nscscc/compiler2022/-/tree/master/%E5%85%AC%E5%BC%80%E6%A0%B7%E4%BE%8B%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E5%BA%93)[eduxiji.net](http://eduxiji.net)[)](https://gitlab.eduxiji.net/nscscc/compiler2022/-/tree/master/%E5%85%AC%E5%BC%80%E6%A0%B7%E4%BE%8B%E4%B8%8E%E8%BF%90%E8%A1%8C%E6%97%B6%E5%BA%93)) 然后你就可以在容器外部进行更改数据来测试 ps:编译编译器产生的程序应该放到之中
+
+举个例子:
+
+```
+docker run -it --name ci -d -v ./data:/test/data -p 50051:50051 10.249.12.83:5000/compilerhit/sysy-rv64-cpci:2.0
+```
 
 交互式进入容器,使用test中的测试脚本来测试
 
