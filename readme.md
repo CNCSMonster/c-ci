@@ -34,7 +34,7 @@ docker run -it --name ci -d -v <your data folder>:/test/data -p 50051:50051 10.2
 举个例子:
 
 ```
-docker run -it --name ci -d -v ./data:/test/data -p 50051:50051 10.249.12.83:5000/compilerhit/sysy-rv64-cpci:2.0
+docker run -it --name ci -d -v ./data:/test/data -p 50051:50051 10.249.12.83:5000/compilerhit/sysy-rv64-cpci:2.1
 ```
 
 交互式进入容器,使用test中的测试脚本来测试

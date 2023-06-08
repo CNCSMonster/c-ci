@@ -64,7 +64,7 @@ def test(path):
             total_my_exectime+=testunit.my_exectime
         num+=1
     mylog.log("pass "+path)
-    mylog.log("my cost:"+str(total_my_exectime))
+    mylog.log("my  cost:"+str(total_my_exectime))
     mylog.log("std cost:"+str(total_std_exectime))
     return True
 
@@ -265,7 +265,7 @@ class Unit:
             # 如果失败的话,提示失败原因
             return False
         logStr="pass "+self.sy+"\t\tmycost:"+str(self.my_exectime)+"\t\tstdcost:"+str(self.std_exectime)+""
-        mylog.log("pass "+self.sy+"\t",level=2)
+        mylog.log(logStr,level=2)
         return True
    
 if __name__ =="__main__":
