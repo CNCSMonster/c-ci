@@ -1,4 +1,1 @@
-pass /test/data/my/00_dd.sy		mycost:0.06973981857299805		stdcost:0.053423166275024414
-pass /test/data/my
-my  cost:0.06973981857299805
-std cost:0.053423166275024414
+pass /test/data/functional/38_op_priority4.sy		mycost:0.07469320297241211		stdcost:0.10699033737182617

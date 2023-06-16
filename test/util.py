@@ -20,6 +20,8 @@ def get_all_file_paths(directory):
 def test(path):
     # 测试过程中会先清理log的内容
     mylog.log("--------------test "+path+"--------------")
+    # 更新使用的timeout
+    timeout=config.get_max_timeout()
     testunits=[]   #通过名字进行一个set
     sysets=set()
     insets=set()
@@ -35,7 +37,7 @@ def test(path):
         elif extension==".out":
             outsets.add(basename)
     for basename in sysets:
-        testunits.append(Unit(sy=basename+".sy"))
+        testunits.append(Unit(sy=basename+".sy",timeout=timeout))
         end=testunits[-1]
         if basename in insets :
             end.input=basename+".in"
@@ -135,7 +137,12 @@ def cmp_file(path1,path2,logFile=config.logPath):
     return True
     
     
-# 示例用法
+# 判断文件是否为空
+def is_file_empty(file_path):
+    if os.path.isfile(file_path):
+        return os.path.getsize(file_path) == 0
+    else:
+        return False
 
 # 测试单元
 class Unit:
@@ -157,15 +164,18 @@ class Unit:
     myasm="/test/data/myasm.s"  #我们的汇编路径
     myout="/test/data/mout"    #我们输出的路径
     logfile="/test/data/exe.log"    #查看的路径
-    timeout=config.max_timeout  #设计个执行超时时间
+    timeout=20
     
     std_exectime=10000  #统计标准编译器编译出来的目标程序的执行时间
     my_exectime=10000     #统计目标程序执行时间
     
-    def __init__(self,input="",out="",sy=""):
+    
+    # 默认超时执行时间为10s
+    def __init__(self,input="",out="",sy="",timeout=20):
         self.input=input
         self.out=out
         self.sy=sy
+        self.timeout=timeout
 
    
     def order(self):
@@ -245,15 +255,19 @@ class Unit:
             mylog.log("exe run time out at"+self.sy)
             return False
         # 把返回值写入l两个文件末尾
-        # with open(self.tout,"")
-        # if os.stat(self.tout).st_size == 0:
-        #     call_program_with_io(["echo",str(stdRet)],output_file=self.tout,outputmod="a")
-        # else:
-        #     with open(self.tout,"a") as f:
-        #         print("\n"+str(stdRet),file=f)
+        # 判断文件是否为空,已经知道文件非空,则写入一个a
+        if not is_file_empty(self.tout):
+            with open(self.tout,"a") as f:
+                f.write("\n")
+        if not is_file_empty(self.myout) :
+            with open(self.myout,"a") as f:
+                f.write("\n")
+        
         call_program_with_io(["echo",str(stdRet.returncode)],output_file=self.tout,outputmod="a")
         call_program_with_io(["echo",str(myRet.returncode)],output_file=self.myout,outputmod="a")
         # 最后比较两个函数的返回值
+
+        
         
         # TODO,用后来者去比对
         # if not cmp_file(self.tout,self.myout): #比较两个文件执行的输出,把比较结果输出到logfile中
