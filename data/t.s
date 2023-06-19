@@ -10,124 +10,253 @@
 	.comm	_sysy_s,4096,8
 	.comm	_sysy_us,4096,8
 	.comm	_sysy_idx,4,4
-	.globl	a
-	.data
-	.align	2
-	.type	a, @object
-	.size	a, 4
-a:
-	.word	1
-	.globl	b
-	.bss
-	.align	2
-	.type	b, @object
-	.size	b, 4
-b:
-	.zero	4
-	.globl	c
-	.data
-	.align	2
-	.type	c, @object
-	.size	c, 4
-c:
-	.word	1
-	.globl	d
-	.align	2
-	.type	d, @object
-	.size	d, 4
-d:
-	.word	2
-	.globl	e
-	.align	2
-	.type	e, @object
-	.size	e, 4
-e:
-	.word	4
-	.text
+	.comm	M,4,4
+	.comm	L,4,4
+	.comm	N,4,4
+	.align	1
+	.globl	tran
+	.type	tran, @function
+tran:
+	addi	sp,sp,-96
+	sd	s0,88(sp)
+	addi	s0,sp,96
+	sd	a0,-40(s0)
+	sd	a1,-48(s0)
+	sd	a2,-56(s0)
+	sd	a3,-64(s0)
+	sd	a4,-72(s0)
+	sd	a5,-80(s0)
+	sd	a6,-88(s0)
+	sd	a7,-96(s0)
+	sw	zero,-20(s0)
+	ld	a5,-96(s0)
+	addi	a5,a5,8
+	ld	a4,-56(s0)
+	flw	fa5,4(a4)
+	fsw	fa5,0(a5)
+	ld	a5,0(s0)
+	addi	a5,a5,4
+	ld	a4,-48(s0)
+	flw	fa5,8(a4)
+	fsw	fa5,0(a5)
+	ld	a5,-88(s0)
+	addi	a5,a5,4
+	ld	a4,-48(s0)
+	flw	fa5,0(a4)
+	fsw	fa5,0(a5)
+	ld	a5,-88(s0)
+	addi	a5,a5,8
+	ld	a4,-56(s0)
+	flw	fa5,0(a4)
+	fsw	fa5,0(a5)
+	ld	a5,-40(s0)
+	flw	fa5,4(a5)
+	ld	a5,-96(s0)
+	fsw	fa5,0(a5)
+	ld	a5,-40(s0)
+	flw	fa5,8(a5)
+	ld	a5,0(s0)
+	fsw	fa5,0(a5)
+	ld	a5,-96(s0)
+	addi	a5,a5,4
+	ld	a4,-48(s0)
+	flw	fa5,4(a4)
+	fsw	fa5,0(a5)
+	ld	a5,0(s0)
+	addi	a5,a5,8
+	ld	a4,-56(s0)
+	flw	fa5,8(a4)
+	fsw	fa5,0(a5)
+	ld	a5,-40(s0)
+	flw	fa5,0(a5)
+	ld	a5,-88(s0)
+	fsw	fa5,0(a5)
+	li	a5,0
+	mv	a0,a5
+	ld	s0,88(sp)
+	addi	sp,sp,96
+	jr	ra
+	.size	tran, .-tran
 	.align	1
 	.globl	main
 	.type	main, @function
 main:
-	addi	sp,sp,-32
-	sd	ra,24(sp)
-	sd	s0,16(sp)
-	addi	s0,sp,32
-	sw	zero,-20(s0)
-	lla	a5,a
-	lw	a4,0(a5)
-	lla	a5,b
-	lw	a5,0(a5)
-	mulw	a5,a4,a5
-	sext.w	a4,a5
-	lla	a5,c
-	lw	a5,0(a5)
-	divw	a5,a4,a5
-	sext.w	a3,a5
-	lla	a5,e
-	lw	a4,0(a5)
-	lla	a5,d
-	lw	a5,0(a5)
-	addw	a5,a4,a5
-	sext.w	a5,a5
-	mv	a4,a3
-	bne	a4,a5,.L2
-	lla	a5,a
-	lw	a4,0(a5)
-	lla	a5,b
-	lw	a5,0(a5)
-	addw	a5,a4,a5
-	sext.w	a4,a5
-	lla	a5,a
-	lw	a5,0(a5)
-	mulw	a5,a4,a5
-	sext.w	a4,a5
-	lla	a5,c
-	lw	a5,0(a5)
-	addw	a5,a4,a5
-	sext.w	a3,a5
-	lla	a5,d
-	lw	a4,0(a5)
-	lla	a5,e
-	lw	a5,0(a5)
-	addw	a5,a4,a5
-	sext.w	a5,a5
-	mv	a4,a3
-	ble	a4,a5,.L3
-.L2:
-	lla	a5,a
-	lw	a4,0(a5)
-	lla	a5,b
-	lw	a3,0(a5)
-	lla	a5,c
-	lw	a5,0(a5)
-	mulw	a5,a3,a5
-	sext.w	a5,a5
-	subw	a5,a4,a5
-	sext.w	a2,a5
-	lla	a5,d
-	lw	a4,0(a5)
-	lla	a5,a
-	lw	a3,0(a5)
-	lla	a5,c
-	lw	a5,0(a5)
-	divw	a5,a3,a5
-	sext.w	a5,a5
-	subw	a5,a4,a5
-	sext.w	a5,a5
-	mv	a4,a2
-	bne	a4,a5,.L4
-.L3:
-	li	a5,1
-	sw	a5,-20(s0)
+	addi	sp,sp,-208
+	sd	ra,200(sp)
+	sd	s0,192(sp)
+	addi	s0,sp,208
+	la	a5,__stack_chk_guard
+	ld	a5,0(a5)
+	sd	a5,-24(s0)
+	la	a5,N
+	li	a4,3
+	sw	a4,0(a5)
+	la	a5,M
+	li	a4,3
+	sw	a4,0(a5)
+	la	a5,L
+	li	a4,3
+	sw	a4,0(a5)
+	sw	zero,-184(s0)
+	j	.L4
+.L5:
+	lw	a5,-184(s0)
+	fcvt.s.w	fa5,a5
+	lw	a5,-184(s0)
+	slli	a5,a5,2
+	addi	a4,s0,-16
+	add	a5,a4,a5
+	fsw	fa5,-160(a5)
+	lw	a5,-184(s0)
+	fcvt.s.w	fa5,a5
+	lw	a5,-184(s0)
+	slli	a5,a5,2
+	addi	a4,s0,-16
+	add	a5,a4,a5
+	fsw	fa5,-144(a5)
+	lw	a5,-184(s0)
+	fcvt.s.w	fa5,a5
+	lw	a5,-184(s0)
+	slli	a5,a5,2
+	addi	a4,s0,-16
+	add	a5,a4,a5
+	fsw	fa5,-128(a5)
+	lw	a5,-184(s0)
+	fcvt.s.w	fa5,a5
+	lw	a5,-184(s0)
+	slli	a5,a5,2
+	addi	a4,s0,-16
+	add	a5,a4,a5
+	fsw	fa5,-112(a5)
+	lw	a5,-184(s0)
+	fcvt.s.w	fa5,a5
+	lw	a5,-184(s0)
+	slli	a5,a5,2
+	addi	a4,s0,-16
+	add	a5,a4,a5
+	fsw	fa5,-96(a5)
+	lw	a5,-184(s0)
+	fcvt.s.w	fa5,a5
+	lw	a5,-184(s0)
+	slli	a5,a5,2
+	addi	a4,s0,-16
+	add	a5,a4,a5
+	fsw	fa5,-80(a5)
+	lw	a5,-184(s0)
+	addiw	a5,a5,1
+	sw	a5,-184(s0)
 .L4:
-	lw	a5,-20(s0)
+	la	a5,M
+	lw	a4,0(a5)
+	lw	a5,-184(s0)
+	sext.w	a5,a5
+	blt	a5,a4,.L5
+	addi	a7,s0,-80
+	addi	a6,s0,-48
+	addi	t1,s0,-96
+	addi	a4,s0,-112
+	addi	a3,s0,-128
+	addi	a2,s0,-144
+	addi	a1,s0,-160
+	addi	a0,s0,-176
+	addi	a5,s0,-64
+	sd	a5,0(sp)
+	mv	a5,t1
+	call	tran
+	mv	a5,a0
+	sw	a5,-184(s0)
+	j	.L6
+.L7:
+	lw	a5,-184(s0)
+	slli	a5,a5,2
+	addi	a4,s0,-16
+	add	a5,a4,a5
+	flw	fa5,-32(a5)
+	fcvt.w.s a5,fa5,rtz
+	sw	a5,-180(s0)
+	lw	a5,-180(s0)
 	mv	a0,a5
 	call	putint@plt
-	lw	a5,-20(s0)
+	lw	a5,-184(s0)
+	addiw	a5,a5,1
+	sw	a5,-184(s0)
+.L6:
+	la	a5,N
+	lw	a4,0(a5)
+	lw	a5,-184(s0)
+	sext.w	a5,a5
+	blt	a5,a4,.L7
+	li	a5,10
+	sw	a5,-180(s0)
+	lw	a5,-180(s0)
 	mv	a0,a5
-	ld	ra,24(sp)
-	ld	s0,16(sp)
-	addi	sp,sp,32
+	call	putch@plt
+	sw	zero,-184(s0)
+	j	.L8
+.L9:
+	lw	a5,-184(s0)
+	slli	a5,a5,2
+	addi	a4,s0,-16
+	add	a5,a4,a5
+	flw	fa5,-64(a5)
+	fcvt.w.s a5,fa5,rtz
+	sw	a5,-180(s0)
+	lw	a5,-180(s0)
+	mv	a0,a5
+	call	putint@plt
+	lw	a5,-184(s0)
+	addiw	a5,a5,1
+	sw	a5,-184(s0)
+.L8:
+	la	a5,N
+	lw	a4,0(a5)
+	lw	a5,-184(s0)
+	sext.w	a5,a5
+	blt	a5,a4,.L9
+	li	a5,10
+	sw	a5,-180(s0)
+	sw	zero,-184(s0)
+	lw	a5,-180(s0)
+	mv	a0,a5
+	call	putch@plt
+	j	.L10
+.L11:
+	lw	a5,-184(s0)
+	slli	a5,a5,2
+	addi	a4,s0,-16
+	add	a5,a4,a5
+	flw	fa5,-48(a5)
+	fcvt.w.s a5,fa5,rtz
+	sw	a5,-180(s0)
+	lw	a5,-180(s0)
+	mv	a0,a5
+	call	putint@plt
+	lw	a5,-184(s0)
+	addiw	a5,a5,1
+	sw	a5,-184(s0)
+.L10:
+	la	a5,N
+	lw	a4,0(a5)
+	lw	a5,-184(s0)
+	sext.w	a5,a5
+	blt	a5,a4,.L11
+	li	a5,10
+	sw	a5,-180(s0)
+	lw	a5,-180(s0)
+	mv	a0,a5
+	call	putch@plt
+	li	a5,0
+	mv	a3,a5
+	la	a5,__stack_chk_guard
+	ld	a4,-24(s0)
+	ld	a5,0(a5)
+	beq	a4,a5,.L13
+	call	__stack_chk_fail@plt
+.L13:
+	mv	a0,a3
+	ld	ra,200(sp)
+	ld	s0,192(sp)
+	addi	sp,sp,208
 	jr	ra
 	.size	main, .-main
 	.ident	"GCC: (Ubuntu 9.4.0-1ubuntu1~20.04) 9.4.0"

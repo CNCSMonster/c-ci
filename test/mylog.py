@@ -12,3 +12,9 @@ def log(msg:str,level=1,outPath=config.logPath):
     with open(outPath,"a") as f:
         if level<=config.level:
             f.write(msg+"\n")
+            
+            
+def log_fail(msg:str,level=1,outPath=config.failLogPath):
+    with open(outPath,"a") as f:
+        if level<=config.level:
+            f.write(msg+"\n")
