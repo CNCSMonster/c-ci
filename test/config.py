@@ -7,7 +7,7 @@ level=2
 
 def get_max_timeout():  #设计个执行超时时间
     try:
-        with open(failLogPath,"r") as f:
+        with open(timePath,"r") as f:
             time=f.readline()
             time=int(time,10)
             return time

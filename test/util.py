@@ -16,12 +16,14 @@ def get_all_file_paths(directory):
     return file_paths
 
 
+
 # 测试某个文件夹下的内容,测试成功返回true,测试失败返回false
 def test(path):
     # 测试过程中会先清理log的内容
     mylog.log("--------------test "+path+"--------------")
     # 更新使用的timeout
     timeout=config.get_max_timeout()
+    mylog.log("test timelimit:"+str(timeout))
     testunits=[]   #通过名字进行一个set
     sysets=set()
     insets=set()
@@ -36,23 +38,28 @@ def test(path):
             insets.add(basename)
         elif extension==".out":
             outsets.add(basename)
+    basename_list=[]
+    name_map=dict()
     for basename in sysets:
-        testunits.append(Unit(sy=basename+".sy",timeout=timeout))
-        end=testunits[-1]
+        testunit=Unit(sy=basename+".sy",timeout=timeout)
+        testunits.append(testunit)
+        basename_list.append(basename)
+        name_map[basename]=testunit
         if basename in insets :
-            end.input=basename+".in"
+            testunit.input=basename+".in"
         if basename in outsets:
-            end.out=basename+".out"
+            testunit.out=basename+".out"
             
     num=0
     
-    
     # 对testunits进行排序,按照首个字母下标进行升序排序
-    testunits.sort(key=lambda v:v.order() )  
-    
+    basename_list=sorted(basename_list)
+    final_testunits=[]
+    for basename in basename_list :
+        final_testunits.append(name_map[basename])
+    testunits=final_testunits
     total_std_exectime=0
     total_my_exectime=0
-    
     for testunit in testunits :
         # print(testunit.order())
         # 统计执行时间,比较每个程序的执行时间,如果我们的程序比较好,在后面加上标记
@@ -68,6 +75,7 @@ def test(path):
     mylog.log("pass "+path)
     mylog.log("my  cost:"+str(total_my_exectime))
     mylog.log("std cost:"+str(total_std_exectime))
+    mylog.log("cmp(std/my):"+str(total_std_exectime/total_my_exectime))
     return True
 
 
@@ -75,6 +83,7 @@ def test_per(path):
     mylog.log("--------------test "+path+"--------------")
     # 更新使用的timeout
     timeout=config.get_max_timeout()
+    mylog.log("test timelimit:"+str(timeout))
     testunits=[]   #通过名字进行一个set
     sysets=set()
     insets=set()
@@ -89,17 +98,25 @@ def test_per(path):
             insets.add(basename)
         elif extension==".out":
             outsets.add(basename)
+    basename_list=[]
+    name_map=dict()
     for basename in sysets:
-        testunits.append(Unit(sy=basename+".sy",timeout=timeout))
-        end=testunits[-1]
+        testunit=Unit(sy=basename+".sy",timeout=timeout)
+        testunits.append(testunit)
+        basename_list.append(basename)
+        name_map[basename]=testunit
         if basename in insets :
-            end.input=basename+".in"
+            testunit.input=basename+".in"
         if basename in outsets:
-            end.out=basename+".out"
+            testunit.out=basename+".out"
             
     num=0
     # 对testunits进行排序,按照首个字母下标进行升序排序
-    testunits.sort(key=lambda v:v.order() )  
+    basename_list=sorted(basename_list)
+    final_testunits=[]
+    for basename in basename_list :
+        final_testunits.append(name_map[basename])
+    testunits=final_testunits
     
     total_std_exectime=0
     total_my_exectime=0
@@ -109,10 +126,12 @@ def test_per(path):
         if not testunit.test():
             mylog.log_fail("fail at:"+testunit.sy)
             mylog.log("fail at:"+testunit.sy)
-            mylog.log("my cost:"+str(total_my_exectime))
-            mylog.log("std cost:"+str(total_std_exectime))
+        else:
+            total_std_exectime+=testunit.std_exectime
+            total_my_exectime+=testunit.my_exectime
         num+=1
     mylog.log("test "+path+ " : "+str(num)+"/"+str(len(testunits)))
+    mylog.log("cmp(std/my):"+str(total_std_exectime/total_my_exectime))
     return True
 
 # 测试/test/data内所有文件夹里面的测试内容
@@ -269,30 +288,42 @@ class Unit:
         except:
             mylog.log(self.compiler+" compile timeout at "+self.sy)
             return False
+        # 执行标准编译器编译产生的程序
+        texe_ok=True
+        try:
+            if self.input!='':
+                # TODO,统计执行时间，
+                # 如果需要输入文件时
+                # 执行标准编译器编译出来的程序
+                start_time=time.time()
+                stdRet=call_program_with_io(["qemu-riscv64","-L","/usr/riscv64-linux-gnu",self.texe],input_file=self.tin,timeout=self.timeout,output_file=self.tout,outputmod="w")
+                end_time=time.time()
+                self.std_exectime=end_time-start_time
+            else:
+                # 执行标准编译器编译出来的程序
+                start_time = time.time()
+                stdRet=call_program_with_io(["qemu-riscv64","-L","/usr/riscv64-linux-gnu",self.texe],timeout=self.timeout,output_file=self.tout,outputmod="w")
+                end_time=time.time()
+                self.std_exectime=end_time-start_time
+            # 把两个函数的返回值写入到函数结尾
+        except:
+            texe_ok=False
+            mylog.log("stdcompiler's target program exe run time out at"+self.sy)
+        # 执行我们的编译器产生的目标程序
         
         try:
             if self.input!='':
                 # TODO,统计执行时间，
-                start_time = time.time()
                 # 如果需要输入文件时
-                # 执行标准编译器编译出来的程序
-                stdRet=call_program_with_io(["qemu-riscv64","-L","/usr/riscv64-linux-gnu",self.texe],input_file=self.tin,timeout=self.timeout,output_file=self.tout,outputmod="w")
-                end_time=time.time()
-                self.std_exectime=end_time-start_time
                 #执行用我们的编译器编译出来的程序
                 start_time=time.time()
                 myRet=call_program_with_io(["qemu-riscv64","-L","/usr/riscv64-linux-gnu",self.myexe],input_file=self.tin,timeout=self.timeout,output_file=self.myout,outputmod="w")
                 end_time=time.time()
                 self.my_exectime=end_time-start_time
             else:
-                # 执行标准编译器编译出来的程序
-                start_time = time.time()
-                stdRet=call_program_with_io(["qemu-riscv64","-L","/usr/riscv64-linux-gnu",self.texe],output_file=self.tout,outputmod="w")
-                end_time=time.time()
-                self.std_exectime=end_time-start_time
                 #执行用我们的编译器编译出来的程序
                 start_time=time.time()
-                myRet=call_program_with_io(["qemu-riscv64","-L","/usr/riscv64-linux-gnu",self.myexe],output_file=self.myout,outputmod="w")
+                myRet=call_program_with_io(["qemu-riscv64","-L","/usr/riscv64-linux-gnu",self.myexe],timeout=self.timeout,output_file=self.myout,outputmod="w")
                 end_time=time.time()
                 self.my_exectime=end_time-start_time
             # 把两个函数的返回值写入到函数结尾
@@ -308,26 +339,36 @@ class Unit:
             with open(self.myout,"a") as f:
                 f.write("\n")
         
-        call_program_with_io(["echo",str(stdRet.returncode)],output_file=self.tout,outputmod="a")
-        call_program_with_io(["echo",str(myRet.returncode)],output_file=self.myout,outputmod="a")
+        if stdRet is not None :
+            call_program_with_io(["echo",str(stdRet.returncode)],output_file=self.tout,outputmod="a")
+        if myRet is not None:
+            call_program_with_io(["echo",str(myRet.returncode)],output_file=self.myout,outputmod="a")
         # 最后比较两个函数的返回值
-
-        
         
         # TODO,用后来者去比对
         # if not cmp_file(self.tout,self.myout): #比较两个文件执行的输出,把比较结果输出到logfile中
         #     mylog.log("fail at "+self.sy)
         #     # 如果失败的话,提示失败原因
         #     return False
-        if not cmp_file(self.out,self.myout):
-            mylog.log("fail at "+self.sy)
+        ok=False
+        if not ok and not cmp_file(self.out,self.myout) :
+            mylog.log("out vs. mout diff at "+self.sy)
             # 如果失败的话,提示失败原因
+        else:
+            ok=True
+        if not ok and texe_ok:
+            if  not  cmp_file(self.tout,self.myout):
+                mylog.log("tout vs. mout diff at "+self.sy)
+            else:
+                ok=True
+        if not ok :
+            mylog.log("fail at "+self.sy)
             return False
         logStr="pass "+self.sy+"\t\tmycost:"+str(self.my_exectime)+"\t\tstdcost:"+str(self.std_exectime)+""
         mylog.log(logStr,level=2)
-        return True
+        return ok
    
 if __name__ =="__main__":
     print(config.get_max_timeout())
-    test_per("./data/functional")
+    test_per("./data/my")
     
