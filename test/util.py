@@ -17,8 +17,9 @@ def get_all_file_paths(directory):
 
 
 
+
 # 测试某个文件夹下的内容,测试成功返回true,测试失败返回false
-def test(path):
+def test(path,ifop=False):
     # 测试过程中会先清理log的内容
     mylog.log("--------------test "+path+"--------------")
     # 更新使用的timeout
@@ -63,23 +64,36 @@ def test(path):
     for testunit in testunits :
         # print(testunit.order())
         # 统计执行时间,比较每个程序的执行时间,如果我们的程序比较好,在后面加上标记
-        if not testunit.test():
-            mylog.log("test "+path+ " fail! "+str(num)+"/"+str(len(testunits)))
-            mylog.log("my cost:"+str(total_my_exectime))
-            mylog.log("std cost:"+str(total_std_exectime))
-            return False
+        if ifop:
+            if not testunit.test_op():
+                mylog.log("test "+path+ " fail! "+str(num)+"/"+str(len(testunits)))
+                mylog.log("my cost:"+str(total_my_exectime))
+                mylog.log("std cost:"+str(total_std_exectime))
+                return False
+            else:
+                total_std_exectime+=testunit.std_exectime
+                total_my_exectime+=testunit.my_exectime
         else:
-            total_std_exectime+=testunit.std_exectime
-            total_my_exectime+=testunit.my_exectime
+            if not testunit.test():
+                mylog.log("test "+path+ " fail! "+str(num)+"/"+str(len(testunits)))
+                mylog.log("my cost:"+str(total_my_exectime))
+                mylog.log("std cost:"+str(total_std_exectime))
+                return False
+            else:
+                total_std_exectime+=testunit.std_exectime
+                total_my_exectime+=testunit.my_exectime
+        
+            pass
         num+=1
     mylog.log("pass "+path)
     mylog.log("my  cost:"+str(total_my_exectime))
     mylog.log("std cost:"+str(total_std_exectime))
-    mylog.log("cmp(std/my):"+str(total_std_exectime/total_my_exectime))
+    mylog.log("cmp(std/my):"+str(total_std_exectime/(total_my_exectime+0.00001)))
     return True
 
 
-def test_per(path):
+# 是否优化且per
+def test_per(path,ifop=False):
     mylog.log("--------------test "+path+"--------------")
     # 更新使用的timeout
     timeout=config.get_max_timeout()
@@ -123,16 +137,26 @@ def test_per(path):
     for testunit in testunits :
         # print(testunit.order())
         # 统计执行时间,比较每个程序的执行时间,如果我们的程序比较好,在后面加上标记
-        if not testunit.test():
-            mylog.log_fail("fail at:"+testunit.sy)
-            mylog.log("fail at:"+testunit.sy)
+        if ifop :
+            if not testunit.test_op():
+                mylog.log_fail("fail at:"+testunit.sy)
+                mylog.log("fail at:"+testunit.sy)
+            else:
+                total_std_exectime+=testunit.std_exectime
+                total_my_exectime+=testunit.my_exectime
         else:
-            total_std_exectime+=testunit.std_exectime
-            total_my_exectime+=testunit.my_exectime
+            if not testunit.test():
+                mylog.log_fail("fail at:"+testunit.sy)
+                mylog.log("fail at:"+testunit.sy)
+            else:
+                total_std_exectime+=testunit.std_exectime
+                total_my_exectime+=testunit.my_exectime
         num+=1
     mylog.log("test "+path+ " : "+str(num)+"/"+str(len(testunits)))
-    mylog.log("cmp(std/my):"+str(total_std_exectime/total_my_exectime))
+    mylog.log("cmp(std/my):"+str(total_std_exectime/(total_my_exectime+0.0001)))
     return True
+
+
 
 # 测试/test/data内所有文件夹里面的测试内容
 def testall():
@@ -249,7 +273,7 @@ class Unit:
         return int(str1,10)
     
     # 测试该测试单元,执行前应该先指定使用的编译器
-    def test(self):
+    def test_op(self):
         # 复制对应路径的内容到当前路径下
         if self.input!="":
             subprocess.run(["cp",self.input,self.tin])
@@ -266,7 +290,126 @@ class Unit:
             # 先编译出汇编
             call_program_with_io(['echo',"#include \"/test/data/sylib.h\""],output_file=self.tmp,outputmod="w")
             call_program_with_io(['cat',self.tsrc],output_file=self.tmp,outputmod="a")
-            subprocess.run([self.stdcompiler,self.tmp,"-S",'-o',self.tasm],timeout=self.timeout)
+            subprocess.run([self.stdcompiler,self.tmp,"-S",'-o',self.tasm,'-O2'],timeout=self.timeout)
+            subprocess.run([self.stdcompiler,"-o",self.texe,self.tasm,self.lib],timeout=self.timeout)
+        except:
+            mylog.log(self.stdcompiler+" fail to compile at "+self.sy)
+            # return False  #TODO ,暂时不使用标准编译器,
+        # 我们的编译过程
+        try:
+            # TODO compiler testcase.sysy -S -o testcase.s
+            with open(config.logPath,"a+") as f:
+                myRet=subprocess.run([self.compiler,self.tsrc,"-S","-o",self.myasm,'-O1'],stderr=f,timeout=self.timeout)
+                if myRet.returncode!=0:
+                    mylog.log(myRet.stderr)
+                    mylog.log("compiler fail to compile at "+self.sy)
+                    return False
+                myRet=subprocess.run([self.stdcompiler,"-o",self.myexe,self.myasm,self.lib],stderr=f,timeout=self.timeout)
+                if myRet.returncode!=0:
+                    mylog.log(myRet.stderr)
+                    mylog.log("compiler fail to compile at "+self.sy)
+                    return False
+        except:
+            mylog.log(self.compiler+" compile timeout at "+self.sy)
+            return False
+        # 执行标准编译器编译产生的程序
+        texe_ok=True
+        try:
+            if self.input!='':
+                # TODO,统计执行时间，
+                # 如果需要输入文件时
+                # 执行标准编译器编译出来的程序
+                start_time=time.time()
+                stdRet=call_program_with_io(["qemu-riscv64","-L","/usr/riscv64-linux-gnu",self.texe],input_file=self.tin,timeout=self.timeout,output_file=self.tout,outputmod="w")
+                end_time=time.time()
+                self.std_exectime=end_time-start_time
+            else:
+                # 执行标准编译器编译出来的程序
+                start_time = time.time()
+                stdRet=call_program_with_io(["qemu-riscv64","-L","/usr/riscv64-linux-gnu",self.texe],timeout=self.timeout,output_file=self.tout,outputmod="w")
+                end_time=time.time()
+                self.std_exectime=end_time-start_time
+            # 把两个函数的返回值写入到函数结尾
+        except:
+            texe_ok=False
+            mylog.log("stdcompiler's target program exe run time out at"+self.sy)
+        # 执行我们的编译器产生的目标程序
+        
+        try:
+            if self.input!='':
+                # TODO,统计执行时间，
+                # 如果需要输入文件时
+                #执行用我们的编译器编译出来的程序
+                start_time=time.time()
+                myRet=call_program_with_io(["qemu-riscv64","-L","/usr/riscv64-linux-gnu",self.myexe],input_file=self.tin,timeout=self.timeout,output_file=self.myout,outputmod="w")
+                end_time=time.time()
+                self.my_exectime=end_time-start_time
+            else:
+                #执行用我们的编译器编译出来的程序
+                start_time=time.time()
+                myRet=call_program_with_io(["qemu-riscv64","-L","/usr/riscv64-linux-gnu",self.myexe],timeout=self.timeout,output_file=self.myout,outputmod="w")
+                end_time=time.time()
+                self.my_exectime=end_time-start_time
+            # 把两个函数的返回值写入到函数结尾
+        except:
+            mylog.log("exe run time out at"+self.sy)
+            return False
+        # 把返回值写入l两个文件末尾
+        # 判断文件是否为空,已经知道文件非空,则写入一个a
+        if not is_file_empty(self.tout):
+            with open(self.tout,"a") as f:
+                f.write("\n")
+        if not is_file_empty(self.myout) :
+            with open(self.myout,"a") as f:
+                f.write("\n")
+        
+        if stdRet is not None :
+            call_program_with_io(["echo",str(stdRet.returncode)],output_file=self.tout,outputmod="a")
+        if myRet is not None:
+            call_program_with_io(["echo",str(myRet.returncode)],output_file=self.myout,outputmod="a")
+        # 最后比较两个函数的返回值
+        
+        # TODO,用后来者去比对
+        # if not cmp_file(self.tout,self.myout): #比较两个文件执行的输出,把比较结果输出到logfile中
+        #     mylog.log("fail at "+self.sy)
+        #     # 如果失败的话,提示失败原因
+        #     return False
+        ok=False
+        if not ok and not cmp_file(self.out,self.myout) :
+            mylog.log("out vs. mout diff at "+self.sy)
+            # 如果失败的话,提示失败原因
+        else:
+            ok=True
+        if not ok and texe_ok:
+            if  not  cmp_file(self.tout,self.myout):
+                mylog.log("tout vs. mout diff at "+self.sy)
+            else:
+                ok=True
+        if not ok :
+            mylog.log("fail at "+self.sy)
+            return False
+        logStr="pass "+self.sy+"\t\tmycost:"+str(self.my_exectime)+"\t\tstdcost:"+str(self.std_exectime)+""
+        mylog.log(logStr,level=2)
+        return ok
+   
+    # 优化的测试结果,
+    def test(self):
+        # 复制对应路径的内容到当前路径下
+        if self.input!="":
+            subprocess.run(["cp",self.input,self.tin])
+        subprocess.run(["cp",self.out,self.tout])
+        call_program_with_io(["echo","#include \"../t.h\""],output_file=self.tmp,outputmod="w")
+        call_program_with_io(['cat',self.sy],output_file= self.tmp,outputmod="a")
+        # 先对源代码进行预处理,去掉宏
+        subprocess.run([self.stdcompiler,"-E","-P",self.tmp,"-o",self.tsrc])
+        stdRet=None
+        myRet=None
+        #标准编译过程
+        try:
+            # 先编译出汇编
+            call_program_with_io(['echo',"#include \"/test/data/sylib.h\""],output_file=self.tmp,outputmod="w")
+            call_program_with_io(['cat',self.tsrc],output_file=self.tmp,outputmod="a")
+            subprocess.run([self.stdcompiler,self.tmp,"-S",'-o',self.tasm,'-O2'],timeout=self.timeout)
             subprocess.run([self.stdcompiler,"-o",self.texe,self.tasm,self.lib],timeout=self.timeout)
         except:
             mylog.log(self.stdcompiler+" fail to compile at "+self.sy)
@@ -310,7 +453,6 @@ class Unit:
             texe_ok=False
             mylog.log("stdcompiler's target program exe run time out at"+self.sy)
         # 执行我们的编译器产生的目标程序
-        
         try:
             if self.input!='':
                 # TODO,统计执行时间，

@@ -29,9 +29,9 @@ class YourService(ci_pb2_grpc.GreeterServicer):
         # 拿这个路径拼接成实际的测试路径
         path="/test/data/"+path
         if not ifPer:
-            retMsg=util.test(path)
+            retMsg=util.test(path,ifop=ifOpt)
         else:
-            retMsg=util.test_per(path)
+            retMsg=util.test_per(path,ifop=ifOpt)
         return ci_pb2.TestReply(retMsg=str(path))
 
 server = grpc.server(futures.ThreadPoolExecutor())
